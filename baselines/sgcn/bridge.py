@@ -5,11 +5,11 @@ from .utils import TrajectoryDataset
 
 
 def get_dataloader(data_dir, phase, obs_len, pred_len, batch_size):
-    assert phase in ['train', 'val', 'test']
+    assert phase in ['train', 'val', 'test'] # if phase in ['train', 'val', 'test'] do
     data_set = data_dir + phase + '/'
     shuffle = True if phase == 'train' else False
 
-    dset_train = TrajectoryDataset(data_set, obs_len=obs_len, pred_len=pred_len, skip=1)
+    dset_train = TrajectoryDataset(data_set, obs_len=obs_len, pred_len=pred_len, skip=1) # obs_len: observation length
     loader_phase = DataLoader(dset_train, batch_size=1, shuffle=shuffle, num_workers=0)
     return loader_phase, batch_size
 

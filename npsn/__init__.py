@@ -1,3 +1,4 @@
+# Without __init__.py, you cannot import modules from another folder into your project.
 from .model import NPSN
 from .sampler import mc_sample_fast as mc_sample
 from .sampler import qmc_sample_fast as qmc_sample

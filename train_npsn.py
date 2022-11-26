@@ -161,15 +161,15 @@ def main(args):
     print("Training initiating....")
     print(args)
 
-    data_set = './dataset/' + args.dataset + '/'
-    model_path = './pretrained/' + args.baseline + '/' + args.dataset + '/val_best.pth'
-    checkpoint_dir = './checkpoints/' + args.tag + '/' + args.dataset + '/'
+    data_set = './dataset/' + args.dataset + '/' # ./dataset/zara2/
+    model_path = './pretrained/' + args.baseline + '/' + args.dataset + '/val_best.pth' # ./pretrained/sgcn/zara2/val_best.pth
+    checkpoint_dir = './checkpoints/' + args.tag + '/' + args.dataset + '/' # ./checkpoints/npsn/zara2/
 
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
 
     with open(checkpoint_dir + 'args.pkl', 'wb') as fp:
-        pickle.dump(args, fp)
+        pickle.dump(args, fp)  # https://blog.csdn.net/coffee_cream/article/details/51754484
 
     # Dataloader
     loader_train, _ = get_dataloader(data_set, 'train', args.obs_len, args.pred_len, args.batch_size)
