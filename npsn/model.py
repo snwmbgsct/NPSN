@@ -3,8 +3,14 @@ import torch.nn as nn
 from .utils import box_muller_transform
 
 
-class GAT(nn.Module):
+class GAT(nn.Module): ## Graph attention Networks
     def __init__(self, in_feat=2, out_feat=64, n_head=4, dropout=0.1, skip=True):
+        '''
+        in_feat: input feature
+        out_feat: output feature
+        n_head: number of heads
+        skip: skip connection
+        '''
         super(GAT, self).__init__()
         self.in_feat = in_feat
         self.out_feat = out_feat
@@ -19,16 +25,20 @@ class GAT(nn.Module):
         self.softmax = nn.Softmax(dim=-1)
         self.dropout = nn.Dropout(dropout)
 
-        nn.init.xavier_uniform_(self.w, gain=1.414)
+
+        # xavier_unifrom: Xavier initialization ensures variance of output is the same as the that of input    
+        # better: nn.init.xavier_uniform_(self.w, gain=nn.init.calculate_gain('relu')) 
+        nn.init.xavier_uniform_(self.w, gain=1.414) 
         nn.init.xavier_uniform_(self.a_src, gain=1.414)
         nn.init.xavier_uniform_(self.a_dst, gain=1.414)
-        nn.init.constant_(self.bias, 0)
+        nn.init.constant_(self.bias, 0) # 0 initialization
 
     def forward(self, h, mask=None):
-        h_prime = h.unsqueeze(1) @ self.w
-        attn_src = h_prime @ self.a_src
-        attn_dst = h_prime @ self.a_dst
-        attn = attn_src @ attn_dst.permute(0, 1, 3, 2)
+        h_prime = h.unsqueeze(1) @ self.w 
+        #a.squeeze(N) 就是在a中指定位置N加上一个维数为1的维度。还有一种形式就是b=torch.squeeze(a，N) a就是在a中指定位置N加上一个维数为1的维度
+        attn_src = h_prime @ self.a_src # src： source？
+        attn_dst = h_prime @ self.a_dst # dst： destination？
+        attn = attn_src @ attn_dst.permute(0, 1, 3, 2) # permute: change the dims
         attn = self.leaky_relu(attn)
         attn = self.softmax(attn)
         attn = self.dropout(attn)
@@ -60,7 +70,12 @@ class MLP(nn.Module):
 
 
 class NPSN(nn.Module):
-    def __init__(self, t_obs=8, s=2, n=20):
+    def __init__(self, t_obs=8, s=2, n=20): 
+        '''
+        t_obs: time of observation 0.4*8=3.2
+        s: sample diamension
+        n: number of samples
+        '''
         super(NPSN, self).__init__()
         self.s, self.n = s, n
         self.input_dim = t_obs * 2
