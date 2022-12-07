@@ -11,7 +11,7 @@ def get_dataloader(data_dir, phase, obs_len, pred_len, batch_size):
 
     dset_train = TrajectoryDataset(data_set, obs_len=obs_len, pred_len=pred_len, skip=1) # obs_len: observation length
     loader_phase = DataLoader(dset_train, batch_size=1, shuffle=shuffle, num_workers=0)
-    return loader_phase, batch_size
+    return loader_phase, batch_size # batch_size=512
 
 
 def get_latent_dim():

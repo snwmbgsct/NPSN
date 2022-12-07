@@ -21,7 +21,7 @@ parser.add_argument('--pred_len', type=int, default=12)
 parser.add_argument('--dataset', default='zara2', help='scene ["eth","hotel","univ","zara1","zara2"]')
 parser.add_argument('--baseline', default='sgcn', help='baseline network ["sgcn","stgcnn","pecnet"]')
 parser.add_argument('--batch_size', type=int, default=512, help='minibatch size')
-parser.add_argument('--num_epochs', type=int, default=128, help='number of epochs')
+parser.add_argument('--num_epochs', type=int, default=2, help='number of epochs') # 128
 parser.add_argument('--num_samples', type=int, default=20, help='number of samples for npsn')
 parser.add_argument('--clip_grad', type=float, default=1, help='gradient clipping')
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
@@ -50,10 +50,10 @@ def train(epoch, model, model_npsn, optimizer_npsn, loader_train):
     global metrics, constant_metrics
     model_npsn.train()
     loss_batch = 0.
-    loader_len = len(loader_train)
+    loader_len = len(loader_train) # 2112
 
-    for cnt, batch in enumerate(tqdm(loader_train, desc='Train Epoch: {}'.format(epoch), mininterval=1)):
-        if cnt % args.batch_size == 0:
+    for cnt, batch in enumerate(tqdm(loader_train, desc='Train Epoch: {}'.format(epoch), mininterval=1)): #NOTES: https://tqdm.github.io/
+        if cnt % args.batch_size == 0: # batch:[1,37,2,12]
             optimizer_npsn.zero_grad()
 
         if args.baseline == 'stgcnn':
@@ -100,12 +100,12 @@ def train(epoch, model, model_npsn, optimizer_npsn, loader_train):
 @torch.no_grad()
 def valid(epoch, model, model_npsn, checkpoint_dir, loader_val):
     global metrics, constant_metrics
-    model_npsn.eval()
+    model_npsn.eval() # model.py-NPSN
     loss_batch = 0.
     loader_len = 0
 
     for cnt, batch in enumerate(tqdm(loader_val, desc='Valid Epoch: {}'.format(epoch), mininterval=1)):
-        obs_traj, pred_traj_gt = [tensor.cuda() for tensor in batch[:2]]
+        obs_traj, pred_traj_gt = [tensor.cuda() for tensor in batch[:2]] # len(batch[:2])=2
 
         if args.baseline == 'stgcnn':
             V_obs, A_obs, V_tr, A_tr = [tensor.cuda() for tensor in batch[-4:]]
@@ -114,7 +114,7 @@ def valid(epoch, model, model_npsn, checkpoint_dir, loader_val):
             V_pred = V_pred.permute(0, 2, 3, 1)
         elif args.baseline == 'sgcn':
             V_obs, V_tr = [tensor.cuda() for tensor in batch[-2:]]
-            identity = get_sgcn_identity(V_obs.shape)
+            identity = get_sgcn_identity(V_obs.shape) #V_obs.shape [1, 8, 10, 3]
             V_pred = model(V_obs, identity)
             V_obs = V_obs[..., 1:]
         elif args.baseline == 'pecnet':
@@ -129,19 +129,19 @@ def valid(epoch, model, model_npsn, checkpoint_dir, loader_val):
         # Calculate metrics
         if args.baseline in ['stgcnn', 'sgcn']:
             mu, cov = generate_statistics_matrices(V_pred.squeeze(dim=0))
-            loc = model_npsn(V_obs.permute(0, 2, 3, 1))
+            loc = model_npsn(V_obs.permute(0, 2, 3, 1)) # [1,10,20,2]
 
-            V_obs_traj = obs_traj.permute(0, 3, 1, 2).squeeze(dim=0)
+            V_obs_traj = obs_traj.permute(0, 3, 1, 2).squeeze(dim=0) # torch.Size([8, 10, 2])
             V_pred_traj_gt = pred_traj_gt.permute(0, 3, 1, 2).squeeze(dim=0)
 
             # Sampling trajectories
-            V_pred_sample = purposive_sample(mu, cov, loc.size(2), loc)
+            V_pred_sample = purposive_sample(mu, cov, loc.size(2), loc) # torch.Size([20, 12, 10, 2])
 
             # Evaluate trajectories
-            V_absl = V_pred_sample.cumsum(dim=1) + V_obs_traj[[-1], :, :]
+            V_absl = V_pred_sample.cumsum(dim=1) + V_obs_traj[[-1], :, :] 
             ADEs, FDEs, TCCs = compute_batch_metric(V_absl, V_pred_traj_gt)
 
-            loss_batch += FDEs.sum().item()
+            loss_batch += FDEs.sum().item() # item: tensor to python float
             loader_len += FDEs.size(0)
 
         elif args.baseline == 'pecnet':
@@ -173,14 +173,15 @@ def main(args):
 
     # Dataloader
     loader_train, _ = get_dataloader(data_set, 'train', args.obs_len, args.pred_len, args.batch_size)
-    loader_val, bs = get_dataloader(data_set, 'val', args.obs_len, args.pred_len, args.batch_size)
+    loader_val, bs = get_dataloader(data_set, 'val', args.obs_len, args.pred_len, args.batch_size) #bs=512
     args.batch_size = bs  # Change batch size for custom BatchSampler
 
     # Load backbone network and NPSN
     model = get_model().cuda()
-    model.load_state_dict(torch.load(model_path))
-    model.eval()
-    model_npsn = NPSN(t_obs=args.obs_len, s=get_latent_dim(), n=args.num_samples).cuda()
+    model.load_state_dict(torch.load(model_path)) #'./pretrained/sgcn/zara2/val_best.pth'  state_dictionary
+    model.eval() # evaluation mode 
+    model_npsn = NPSN(t_obs=args.obs_len, s=get_latent_dim(), n=args.num_samples).cuda() #NOTES: model_npsn
+    model_npsn.eval()
     print('{} parameters:'.format(args.baseline.upper()), count_parameters(model))
     print('NPSN parameters:', count_parameters(model_npsn))
 
@@ -192,7 +193,7 @@ def main(args):
     print('Checkpoint dir:', checkpoint_dir)
 
     for epoch in range(args.num_epochs):
-        train(epoch, model, model_npsn, optimizer_npsn, loader_train)
+        train(epoch, model, model_npsn, optimizer_npsn, loader_train) #TODO
         valid(epoch, model, model_npsn, checkpoint_dir, loader_val)
 
         if args.use_lrschd:
@@ -205,8 +206,8 @@ def main(args):
                                                                  constant_metrics['min_val_loss']))
         print(" ")
 
-        with open(checkpoint_dir + 'constant_metrics.pkl', 'wb') as fp:
-            pickle.dump(constant_metrics, fp)
+        with open(checkpoint_dir + 'constant_metrics.pkl', 'wb') as fp: #'./checkpoints/npsn/zara2/constant_metrics.pkl'
+            pickle.dump(constant_metrics, fp) # pickle.dump(obj, file, protocol=None, *, fix_imports=True, buffer_callback=None)
 
 
 if __name__ == '__main__':

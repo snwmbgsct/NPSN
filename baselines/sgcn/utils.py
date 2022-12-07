@@ -215,9 +215,9 @@ class TrajectoryDataset(Dataset):
         start, end = self.seq_start_end[index]
 
         out = [
-            self.obs_traj[start:end, :], self.pred_traj[start:end, :],
-            self.obs_traj_rel[start:end, :], self.pred_traj_rel[start:end, :],
-            self.non_linear_ped[start:end], self.loss_mask[start:end, :],
-            self.v_obs[index], self.v_pred[index]
+            self.obs_traj[start:end, :], self.pred_traj[start:end, :], # [10, 2, 8], [10, 2, 12]
+            self.obs_traj_rel[start:end, :], self.pred_traj_rel[start:end, :], # [10, 2, 8], [10, 2, 12]
+            self.non_linear_ped[start:end], self.loss_mask[start:end, :], # [10], [10, 20]
+            self.v_obs[index], self.v_pred[index] # [8, 10, 3], [12, 10, 2]
         ]
         return out

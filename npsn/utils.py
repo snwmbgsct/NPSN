@@ -6,8 +6,8 @@ import numpy as np
 
 def box_muller_transform(x: torch.FloatTensor):
     r"""Box-Muller transform"""
-    shape = x.shape
-    x = x.view(shape[:-1] + (-1, 2))
+    shape = x.shape # torch.Size([1, 10, 20, 2])
+    x = x.view(shape[:-1] + (-1, 2)) # shape[:-1]: torch.Size([1, 10, 20]) -> torch.Size([1, 10, 20, -1, 2])
     z = torch.zeros_like(x, device=x.device)
     z[..., 0] = (-2 * x[..., 0].log()).sqrt() * (2 * np.pi * x[..., 1]).cos()
     z[..., 1] = (-2 * x[..., 0].log()).sqrt() * (2 * np.pi * x[..., 1]).sin()
@@ -26,19 +26,19 @@ def inv_box_muller_transform(z: torch.FloatTensor):
 
 def generate_statistics_matrices(V):
     r"""generate mean and covariance matrices from the network output."""
-
+    # V.shape = [12, 10, 5]
     mu = V[:, :, 0:2]
     sx = V[:, :, 2].exp()
     sy = V[:, :, 3].exp()
     corr = V[:, :, 4].tanh()
 
-    cov = torch.zeros(V.size(0), V.size(1), 2, 2, device=V.device)
+    cov = torch.zeros(V.size(0), V.size(1), 2, 2, device=V.device) 
     cov[:, :, 0, 0] = sx * sx
     cov[:, :, 0, 1] = corr * sx * sy
     cov[:, :, 1, 0] = corr * sx * sy
     cov[:, :, 1, 1] = sy * sy
 
-    return mu, cov
+    return mu, cov  # expectation and covariance
 
 
 def compute_batch_metric(pred, gt):

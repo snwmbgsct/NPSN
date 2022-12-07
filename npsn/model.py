@@ -92,7 +92,7 @@ class NPSN(nn.Module):
 
     def forward(self, x, seq_start_end=None, mask=None, global_noise=False):
         mask = self.get_scene_mask(x.size(1), seq_start_end) if seq_start_end is not None else mask
-        node = x.reshape(x.size(0), x.size(1), -1)
+        node = x.reshape(x.size(0), x.size(1), -1) #  -1 means: reshape automotically
         node, edge = self.graph_attention(node, mask)
 
         if not global_noise:
