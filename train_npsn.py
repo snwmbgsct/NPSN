@@ -52,7 +52,7 @@ def train(epoch, model, model_npsn, optimizer_npsn, loader_train):
     loss_batch = 0.
     loader_len = len(loader_train) # 2112
 
-    for cnt, batch in enumerate(tqdm(loader_train, desc='Train Epoch: {}'.format(epoch), mininterval=1)): #NOTES: https://tqdm.github.io/
+    for cnt, batch in enumerate(tqdm(loader_train, desc='train epoch: {}'.format(epoch), mininterval=1)): #notes: https://tqdm.github.io/
         if cnt % args.batch_size == 0: # batch:[1,37,2,12]
             optimizer_npsn.zero_grad()
 
@@ -63,10 +63,10 @@ def train(epoch, model, model_npsn, optimizer_npsn, loader_train):
                 V_pred, _ = model(V_obs_tmp, A_obs.squeeze())
                 V_pred = V_pred.permute(0, 2, 3, 1).detach()
         elif args.baseline == 'sgcn':
-            V_obs, V_tr, _, _ = data_sampler(*[tensor.cuda() for tensor in batch[-2:]])
+            V_obs, V_tr, _, _ = data_sampler(*[tensor.cuda() for tensor in batch[-2:]]) # *: split the tensor into individual args
             identity = get_sgcn_identity(V_obs.shape)
             with torch.no_grad():
-                V_pred = model(V_obs, identity).detach()
+                V_pred = model(V_obs, identity).detach() # detach: duplicate a tensor detached from the current graph. no requires_grad
             V_obs = V_obs[..., 1:]
         elif args.baseline == 'pecnet':
             obs_traj, pred_traj, mask, x, y, initial_pos, _ = model_forward_pre_hook(batch, data_sampler=data_sampler)
@@ -191,7 +191,7 @@ def main(args):
 
     print('Data and model loaded')
     print('Checkpoint dir:', checkpoint_dir)
-
+    
     for epoch in range(args.num_epochs):
         train(epoch, model, model_npsn, optimizer_npsn, loader_train) #TODO
         valid(epoch, model, model_npsn, checkpoint_dir, loader_val)
